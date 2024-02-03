@@ -2,6 +2,9 @@ import os.path
 import re
 import pytest
 
+__author__ = "tkdchen"
+__version__ = "0.0.0"
+
 
 class ImageReference:
 
