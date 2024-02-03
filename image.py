@@ -8,7 +8,14 @@ __version__ = "0.0.0"
 
 class ImageReference:
 
-    def __init__(self, repository: str, registry: str = "", namespace: str = "", tag: str = "", digest: str = ""):
+    def __init__(
+        self,
+        repository: str,
+        registry: str = "",
+        namespace: str = "",
+        tag: str = "",
+        digest: str = "",
+    ):
         self.repository = repository
         self.registry = registry
         self.namespace = namespace
@@ -72,7 +79,8 @@ class ImageReference:
 
         leftmost = name_components[0]
 
-        if re.match(r"^[0-9a-zA-Z]+(\.[0-9a-zA-Z_-]+)+(:\d+)?$", leftmost) or leftmost == "localhost":
+        match = re.match(r"^[0-9a-zA-Z]+(\.[0-9a-zA-Z_-]+)+(:\d+)?$", leftmost)
+        if match is not None or leftmost == "localhost":
             registry = leftmost  # looks like a registry, treat it as it is
             name_components.pop(0)
 
@@ -83,69 +91,79 @@ class ImageReference:
 
         if len(name_components) > 0:
             if len(name_components) == 1:
-                repository= name_components[0]
+                repository = name_components[0]
             else:
                 namespace = name_components.pop(0)
-                repository = "/".join(name_components)        
+                repository = "/".join(name_components)
 
         return cls(
             registry=registry, repository=repository, namespace=namespace, tag=tag, digest=digest
         )
 
 
-@pytest.mark.parametrize("pullspec,expected", [
-    # Test pullspec, expected (registry, namespace, repository, tag, digest)
-
-    # simple cases
-    ["ubuntu", ("", "", "ubuntu", "", "")],
-    ["ubuntu:22.04", ("", "", "ubuntu", "22.04", "")],
-    ["ubuntu:latest", ("", "", "ubuntu", "latest", "")],
-    ["localhost/ubuntu", ("localhost", "", "ubuntu", "", "")],
-    ["library/ubuntu", ("", "library", "ubuntu", "", "")],
-    ["app:3000", ("", "", "app", "3000", "")],
-    ["reg.io:3000", ("reg.io:3000", "", "", "", "")],
-    ["reg.io/ubi:9.3", ("reg.io", "", "ubi", "9.3", "")],
-    ["reg.io:3000/ubi:9.3", ("reg.io:3000", "", "ubi", "9.3", "")],
-
-    ["sha256:1234afe3", ("", "", "sha256", "1234afe3", "")],
-    ["org/sha256:1234afe3", ("", "org", "sha256", "1234afe3", "")],
-    ["org/app/sha256:1234afe3", ("", "org", "app/sha256", "1234afe3", "")],
-
-    # multiple path components in the name
-    ["reg.io/org/ubi:9.3", ("reg.io", "org", "ubi", "9.3", "")],
-    ["reg.io/org/tenant/ubi:9.3", ("reg.io", "org", "tenant/ubi", "9.3", "")],
-    ["reg.io:3000/org/tenant/ubi:9.3", ("reg.io:3000", "org", "tenant/ubi", "9.3", "")],
-
-    # with digest
-    ["reg.io/org/ubi@sha256:123", ("reg.io", "org", "ubi", "", "sha256:123")],
-    ["reg.io/org/ubi:9.3@sha256:123", ("reg.io", "org", "ubi", "9.3", "sha256:123")],
-])
+@pytest.mark.parametrize(
+    "pullspec,expected",
+    [
+        # Test pullspec, expected (registry, namespace, repository, tag, digest)
+        # simple cases
+        ["ubuntu", ("", "", "ubuntu", "", "")],
+        ["ubuntu:22.04", ("", "", "ubuntu", "22.04", "")],
+        ["ubuntu:latest", ("", "", "ubuntu", "latest", "")],
+        ["localhost/ubuntu", ("localhost", "", "ubuntu", "", "")],
+        ["library/ubuntu", ("", "library", "ubuntu", "", "")],
+        ["app:3000", ("", "", "app", "3000", "")],
+        ["reg.io:3000", ("reg.io:3000", "", "", "", "")],
+        ["reg.io/ubi:9.3", ("reg.io", "", "ubi", "9.3", "")],
+        ["reg.io:3000/ubi:9.3", ("reg.io:3000", "", "ubi", "9.3", "")],
+        ["sha256:1234afe3", ("", "", "sha256", "1234afe3", "")],
+        ["org/sha256:1234afe3", ("", "org", "sha256", "1234afe3", "")],
+        ["org/app/sha256:1234afe3", ("", "org", "app/sha256", "1234afe3", "")],
+        # multiple path components in the name
+        ["reg.io/org/ubi:9.3", ("reg.io", "org", "ubi", "9.3", "")],
+        ["reg.io/org/tenant/ubi:9.3", ("reg.io", "org", "tenant/ubi", "9.3", "")],
+        ["reg.io:3000/org/tenant/ubi:9.3", ("reg.io:3000", "org", "tenant/ubi", "9.3", "")],
+        # with digest
+        ["reg.io/org/ubi@sha256:123", ("reg.io", "org", "ubi", "", "sha256:123")],
+        ["reg.io/org/ubi:9.3@sha256:123", ("reg.io", "org", "ubi", "9.3", "sha256:123")],
+    ],
+)
 def test_image_reference(pullspec, expected):
     ref = ImageReference.rough_parse(pullspec)
     assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
 
 
-@pytest.mark.parametrize("attrs,expected", [
-    [{"repository": ""}, ""],
-    [{"repository": "ubuntu"}, "ubuntu"],
-    [{"repository": "ubuntu", "namespace": "library"}, "library/ubuntu"],
+@pytest.mark.parametrize(
+    "attrs,expected",
     [
-        {"repository": "ubuntu", "namespace": "library", "registry": "docker.io"},
-        "docker.io/library/ubuntu",
+        [{"repository": ""}, ""],
+        [{"repository": "ubuntu"}, "ubuntu"],
+        [{"repository": "ubuntu", "namespace": "library"}, "library/ubuntu"],
+        [
+            {"repository": "ubuntu", "namespace": "library", "registry": "docker.io"},
+            "docker.io/library/ubuntu",
+        ],
+        [{"repository": "ubuntu", "tag": "22.04"}, "ubuntu:22.04"],
+        [{"repository": "ubuntu", "tag": "latest"}, "ubuntu:latest"],
+        [{"repository": "ubuntu", "namespace": "library"}, "library/ubuntu"],
+        [
+            {
+                "repository": "ubuntu",
+                "namespace": "library",
+                "registry": "docker.io",
+                "tag": "22.04",
+            },
+            "docker.io/library/ubuntu:22.04",
+        ],
+        [
+            {"repository": "ubuntu", "tag": "22.04", "digest": "sha256:123"},
+            "ubuntu:22.04@sha256:123",
+        ],
+        [{"repository": "ubuntu", "digest": "sha256:123"}, "ubuntu@sha256:123"],
+        [
+            {"repository": "ubuntu", "registry": "reg.io", "digest": "sha256:123"},
+            "reg.io/ubuntu@sha256:123",
+        ],
     ],
-    [{"repository": "ubuntu", "tag": "22.04"}, "ubuntu:22.04"],
-    [{"repository": "ubuntu", "tag": "latest"}, "ubuntu:latest"],
-    [{"repository": "ubuntu", "namespace": "library"}, "library/ubuntu"],
-    [
-        {"repository": "ubuntu", "namespace": "library", "registry": "docker.io", "tag": "22.04"},
-        "docker.io/library/ubuntu:22.04",
-    ],
-    [{"repository": "ubuntu", "tag": "22.04", "digest": "sha256:123"}, "ubuntu:22.04@sha256:123"],
-    [{"repository": "ubuntu", "digest": "sha256:123"}, "ubuntu@sha256:123"],
-    [
-        {"repository": "ubuntu", "registry": "reg.io", "digest": "sha256:123"},
-        "reg.io/ubuntu@sha256:123",
-    ],
-])
+)
 def test___str__(attrs, expected):
     assert expected == str(ImageReference(**attrs))

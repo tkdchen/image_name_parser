@@ -1,6 +1,6 @@
 # Rough image pullspec parser
 
-Test code: `pytest -v image.py`
+Test code: `tox`
 
 ## Contribution
 

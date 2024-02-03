@@ -1,0 +1,8 @@
+*~
+*.swp
+.coverage
+
+htmlcov/
+__pycache__/
+.tox/
+
