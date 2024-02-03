@@ -30,6 +30,20 @@ class ImageReference:
             parts.append("@" + self.digest)
         return "".join(parts)
 
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} ({id(self)}): {str(self)}>"
+
+    def __eq__(self, that: object) -> bool:
+        if not isinstance(that, ImageReference):
+            raise TypeError("Passed object is not an instance of ImageReference.")
+        return (
+            self.registry == that.registry
+            and self.namespace == that.namespace
+            and self.repository == that.repository
+            and self.tag == that.tag
+            and self.digest == that.digest
+        )
+
     @classmethod
     def rough_parse(cls, s: str) -> "ImageReference":
         buf = []
@@ -167,3 +181,94 @@ def test_image_reference(pullspec, expected):
 )
 def test___str__(attrs, expected):
     assert expected == str(ImageReference(**attrs))
+
+
+@pytest.mark.parametrize(
+    "image_url,attrs",
+    [
+        [
+            "ubuntu",
+            {
+                "registry": "",
+                "namespace": "",
+                "repository": "ubuntu",
+                "tag": "",
+                "digest": "",
+            },
+        ],
+        [
+            "reg.io/app@sha256:123",
+            {
+                "registry": "reg.io",
+                "namespace": "",
+                "repository": "app",
+                "tag": "",
+                "digest": "sha256:123",
+            },
+        ],
+        [
+            "reg.io/org/room/app:9.3@sha256:123",
+            {
+                "registry": "reg.io",
+                "namespace": "org",
+                "repository": "room/app",
+                "tag": "9.3",
+                "digest": "sha256:123",
+            },
+        ],
+    ],
+)
+def test___eq__(image_url: str, attrs: dict[str, str]):
+    left = ImageReference.rough_parse(image_url)
+    right = ImageReference(**attrs)
+    assert left == right
+
+
+@pytest.mark.parametrize(
+    "image_url,attrs",
+    [
+        [
+            "ubuntu",
+            {
+                "registry": "docker.io",
+                "namespace": "library",
+                "repository": "ubuntu",
+                "tag": "",
+                "digest": "",
+            },
+        ],
+        [
+            "reg.io/app@sha256:123",
+            {
+                "registry": "reg.io",
+                "namespace": "",
+                "repository": "app",
+                "tag": "",
+                "digest": "sha256:e45fad41f2fa",
+            },
+        ],
+        [
+            "reg.io/org/room/app:9.3@sha256:123",
+            {
+                "registry": "reg.io",
+                "namespace": "org",
+                "repository": "app",
+                "tag": "9.3",
+                "digest": "sha256:123",
+            },
+        ],
+    ],
+)
+def test_not__eq__(image_url: str, attrs: dict[str, str]):
+    left = ImageReference.rough_parse(image_url)
+    right = ImageReference(**attrs)
+    assert left != right
+
+
+def test___eq__wrong_type():
+    with pytest.raises(TypeError, match=""):
+        ImageReference.rough_parse("app:9.3").__eq__("app:9.3")
+
+
+def test___repr__():
+    assert "reg.io/app:9.3" in repr(ImageReference.rough_parse("reg.io/app:9.3"))
