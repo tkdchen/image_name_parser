@@ -123,3 +123,29 @@ class ImageReference:
 def test_image_reference(pullspec, expected):
     ref = ImageReference.rough_parse(pullspec)
     assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
+
+
+@pytest.mark.parametrize("attrs,expected", [
+    [{"repository": ""}, ""],
+    [{"repository": "ubuntu"}, "ubuntu"],
+    [{"repository": "ubuntu", "namespace": "library"}, "library/ubuntu"],
+    [
+        {"repository": "ubuntu", "namespace": "library", "registry": "docker.io"},
+        "docker.io/library/ubuntu",
+    ],
+    [{"repository": "ubuntu", "tag": "22.04"}, "ubuntu:22.04"],
+    [{"repository": "ubuntu", "tag": "latest"}, "ubuntu:latest"],
+    [{"repository": "ubuntu", "namespace": "library"}, "library/ubuntu"],
+    [
+        {"repository": "ubuntu", "namespace": "library", "registry": "docker.io", "tag": "22.04"},
+        "docker.io/library/ubuntu:22.04",
+    ],
+    [{"repository": "ubuntu", "tag": "22.04", "digest": "sha256:123"}, "ubuntu:22.04@sha256:123"],
+    [{"repository": "ubuntu", "digest": "sha256:123"}, "ubuntu@sha256:123"],
+    [
+        {"repository": "ubuntu", "registry": "reg.io", "digest": "sha256:123"},
+        "reg.io/ubuntu@sha256:123",
+    ],
+])
+def test___str__(attrs, expected):
+    assert expected == str(ImageReference(**attrs))
