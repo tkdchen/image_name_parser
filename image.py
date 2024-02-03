@@ -30,6 +30,9 @@ class ImageReference:
             parts.append("@" + self.digest)
         return "".join(parts)
 
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} ({id(self)}): {str(self)}>"
+
     def __eq__(self, that: object) -> bool:
         if not isinstance(that, ImageReference):
             raise TypeError("Passed object is not an instance of ImageReference.")
@@ -265,3 +268,7 @@ def test_not__eq__(image_url: str, attrs: dict[str, str]):
 def test___eq__wrong_type():
     with pytest.raises(TypeError, match=""):
         ImageReference.rough_parse("app:9.3").__eq__("app:9.3")
+
+
+def test___repr__():
+    assert "reg.io/app:9.3" in repr(ImageReference.rough_parse("reg.io/app:9.3"))
