@@ -104,9 +104,9 @@ class ImageReference:
     ["reg.io/ubi:9.3", ("reg.io", "", "ubi", "9.3", "")],
     ["reg.io:3000/ubi:9.3", ("reg.io:3000", "", "ubi", "9.3", "")],
 
-    ["sha256:1234afes3", ("", "", "sha256", "1234afes3", "")],
-    ["org/sha256:1234afes3", ("", "org", "sha256", "1234afes3", "")],
-    ["org/app/sha256:1234afes3", ("", "org", "app/sha256", "1234afes3", "")],
+    ["sha256:1234afe3", ("", "", "sha256", "1234afe3", "")],
+    ["org/sha256:1234afe3", ("", "org", "sha256", "1234afe3", "")],
+    ["org/app/sha256:1234afe3", ("", "org", "app/sha256", "1234afe3", "")],
 
     # multiple path components in the name
     ["reg.io/org/ubi:9.3", ("reg.io", "org", "ubi", "9.3", "")],
