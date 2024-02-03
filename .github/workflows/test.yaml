@@ -1,0 +1,23 @@
+name: Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y python3.9 python3.11
+          python3 -m pip install tox
+          python3 -m tox
