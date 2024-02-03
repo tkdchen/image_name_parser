@@ -20,7 +20,7 @@ class ImageReference:
         if self.tag:
             parts.append(":" + self.tag)
         if self.digest:
-            parts.append(f"@{self.digest}")
+            parts.append("@" + self.digest)
         return "".join(parts)
 
     @classmethod
