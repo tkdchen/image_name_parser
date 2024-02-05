@@ -1,9 +1,14 @@
 import os.path
 import re
+from typing import Final
+
 import pytest
 
 __author__ = "tkdchen"
 __version__ = "0.0.0"
+
+# Regular expression matches registered algorithm in OCI image spec
+REGEX_DIGEST: Final = r"^(sha256:[0-9a-f]{64}|sha512:[0-9a-f]{128})$"
 
 
 class ImageReference:
@@ -21,6 +26,19 @@ class ImageReference:
         self.namespace = namespace
         self.tag = tag
         self.digest = digest
+
+    @property
+    def digest(self) -> str:
+        return self._digest
+
+    @digest.setter
+    def digest(self, value: str) -> None:
+        if value == "":
+            self._digest = value
+            return
+        if not re.match(REGEX_DIGEST, value):
+            raise ValueError(f"Value {value} is not a valid sha256 or sha512 digest.")
+        self._digest = value
 
     def __str__(self) -> str:
         parts = [os.path.join(self.registry, self.namespace, self.repository)]
@@ -115,6 +133,9 @@ class ImageReference:
         )
 
 
+FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead9a09ca8246c40"
+
+
 @pytest.mark.parametrize(
     "pullspec,expected",
     [
@@ -137,8 +158,8 @@ class ImageReference:
         ["reg.io/org/tenant/ubi:9.3", ("reg.io", "org", "tenant/ubi", "9.3", "")],
         ["reg.io:3000/org/tenant/ubi:9.3", ("reg.io:3000", "org", "tenant/ubi", "9.3", "")],
         # with digest
-        ["reg.io/org/ubi@sha256:123", ("reg.io", "org", "ubi", "", "sha256:123")],
-        ["reg.io/org/ubi:9.3@sha256:123", ("reg.io", "org", "ubi", "9.3", "sha256:123")],
+        [f"reg.io/org/ubi@{FAKE_DIGEST}", ("reg.io", "org", "ubi", "", FAKE_DIGEST)],
+        [f"reg.io/org/ubi:9.3@{FAKE_DIGEST}", ("reg.io", "org", "ubi", "9.3", FAKE_DIGEST)],
     ],
 )
 def test_image_reference(pullspec, expected):
@@ -169,13 +190,13 @@ def test_image_reference(pullspec, expected):
             "docker.io/library/ubuntu:22.04",
         ],
         [
-            {"repository": "ubuntu", "tag": "22.04", "digest": "sha256:123"},
-            "ubuntu:22.04@sha256:123",
+            {"repository": "ubuntu", "tag": "22.04", "digest": FAKE_DIGEST},
+            f"ubuntu:22.04@{FAKE_DIGEST}",
         ],
-        [{"repository": "ubuntu", "digest": "sha256:123"}, "ubuntu@sha256:123"],
+        [{"repository": "ubuntu", "digest": FAKE_DIGEST}, f"ubuntu@{FAKE_DIGEST}"],
         [
-            {"repository": "ubuntu", "registry": "reg.io", "digest": "sha256:123"},
-            "reg.io/ubuntu@sha256:123",
+            {"repository": "ubuntu", "registry": "reg.io", "digest": FAKE_DIGEST},
+            f"reg.io/ubuntu@{FAKE_DIGEST}",
         ],
     ],
 )
@@ -197,23 +218,23 @@ def test___str__(attrs, expected):
             },
         ],
         [
-            "reg.io/app@sha256:123",
+            f"reg.io/app@{FAKE_DIGEST}",
             {
                 "registry": "reg.io",
                 "namespace": "",
                 "repository": "app",
                 "tag": "",
-                "digest": "sha256:123",
+                "digest": FAKE_DIGEST,
             },
         ],
         [
-            "reg.io/org/room/app:9.3@sha256:123",
+            f"reg.io/org/room/app:9.3@{FAKE_DIGEST}",
             {
                 "registry": "reg.io",
                 "namespace": "org",
                 "repository": "room/app",
                 "tag": "9.3",
-                "digest": "sha256:123",
+                "digest": FAKE_DIGEST,
             },
         ],
     ],
@@ -238,23 +259,23 @@ def test___eq__(image_url: str, attrs: dict[str, str]):
             },
         ],
         [
-            "reg.io/app@sha256:123",
+            f"reg.io/app@{FAKE_DIGEST}",
             {
                 "registry": "reg.io",
                 "namespace": "",
                 "repository": "app",
                 "tag": "",
-                "digest": "sha256:e45fad41f2fa",
+                "digest": FAKE_DIGEST.replace("0", "1"),
             },
         ],
         [
-            "reg.io/org/room/app:9.3@sha256:123",
+            f"reg.io/org/room/app:9.3@{FAKE_DIGEST}",
             {
                 "registry": "reg.io",
                 "namespace": "org",
                 "repository": "app",
                 "tag": "9.3",
-                "digest": "sha256:123",
+                "digest": FAKE_DIGEST,
             },
         ],
     ],
@@ -272,3 +293,29 @@ def test___eq__wrong_type():
 
 def test___repr__():
     assert "reg.io/app:9.3" in repr(ImageReference.rough_parse("reg.io/app:9.3"))
+
+
+@pytest.mark.parametrize(
+    "attrs,expected",
+    [
+        [{"repository": ""}, ("", "", "", "", "")],
+        [{"repository": "app"}, ("", "", "app", "", "")],
+        [{"repository": "app", "registry": "reg.io"}, ("reg.io", "", "app", "", "")],
+        [
+            {"repository": "app", "registry": "reg.io", "tag": "9.3"},
+            ("reg.io", "", "app", "9.3", ""),
+        ],
+        [
+            {"repository": "org/user/app", "registry": "reg.io", "tag": "9.3"},
+            ("reg.io", "", "org/user/app", "9.3", ""),
+        ],
+        [{"repository": "app", "digest": "sha:123"}, "is not a valid"],
+    ],
+)
+def test_direct_initialization(attrs: dict[str, str], expected):
+    if isinstance(expected, str):
+        with pytest.raises(ValueError, match=expected):
+            ImageReference(**attrs)
+    else:
+        ref = ImageReference(**attrs)
+        assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
