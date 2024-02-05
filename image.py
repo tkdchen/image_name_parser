@@ -62,6 +62,15 @@ class ImageReference:
             and self.digest == that.digest
         )
 
+    def as_dict(self) -> dict[str, str]:
+        return {
+            "registry": self.registry,
+            "namespace": self.namespace,
+            "repository": self.repository,
+            "tag": self.tag,
+            "digest": self.digest,
+        }
+
     @classmethod
     def rough_parse(cls, s: str) -> "ImageReference":
         buf = []
@@ -319,3 +328,52 @@ def test_direct_initialization(attrs: dict[str, str], expected):
     else:
         ref = ImageReference(**attrs)
         assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
+
+
+@pytest.mark.parametrize(
+    "image_ref,expected",
+    [
+        [
+            ImageReference("app"),
+            {"registry": "", "namespace": "", "repository": "app", "tag": "", "digest": ""},
+        ],
+        [
+            ImageReference("app", registry="reg.io"),
+            {"registry": "reg.io", "namespace": "", "repository": "app", "tag": "", "digest": ""},
+        ],
+        [
+            ImageReference("app", registry="reg.io", namespace="org"),
+            {
+                "registry": "reg.io",
+                "namespace": "org",
+                "repository": "app",
+                "tag": "",
+                "digest": "",
+            },
+        ],
+        [
+            ImageReference("app", registry="reg.io", namespace="org", tag="9.3"),
+            {
+                "registry": "reg.io",
+                "namespace": "org",
+                "repository": "app",
+                "tag": "9.3",
+                "digest": "",
+            },
+        ],
+        [
+            ImageReference(
+                "app", registry="reg.io", namespace="org", tag="9.3", digest=FAKE_DIGEST
+            ),
+            {
+                "registry": "reg.io",
+                "namespace": "org",
+                "repository": "app",
+                "tag": "9.3",
+                "digest": FAKE_DIGEST,
+            },
+        ],
+    ],
+)
+def test_as_dict(image_ref: ImageReference, expected: dict[str, str]):
+    assert expected == image_ref.as_dict()
