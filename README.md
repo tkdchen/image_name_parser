@@ -1,4 +1,4 @@
-# Rough image pullspec parser
+# Image name parser
 
 Test code: `tox`
 
