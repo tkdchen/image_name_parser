@@ -109,11 +109,16 @@ class ImageReference:
                             break
                         tag_buf.append(c)
                     tag = "".join(reversed(tag_buf))
+                if not buf:
+                    raise ValueError("Missing image name component.")
                 name_components.append("".join(reversed(buf)))
                 # reset
                 buf = []
             else:
                 buf.append(c)
+
+        if not buf:
+            raise ValueError("Missing image name component.")
 
         name_components.append("".join(reversed(buf)))
         name_components.reverse()
@@ -174,6 +179,22 @@ FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead
 def test_image_reference(pullspec, expected):
     ref = ImageReference.rough_parse(pullspec)
     assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
+
+
+@pytest.mark.parametrize(
+    "image_name",
+    [
+        "app/:9.3",
+        "reg.io/app/:9.3",
+        f"reg.io/app/:9.3@{FAKE_DIGEST}",
+        "reg.io/org/app/:9.3",
+        "reg.io/org//app:9.3",
+        "/reg.io/org/app:9.3",
+    ],
+)
+def test_missing_image_name_components(image_name: str) -> None:
+    with pytest.raises(ValueError, match="Missing image name component"):
+        ImageReference.rough_parse(image_name)
 
 
 @pytest.mark.parametrize(
