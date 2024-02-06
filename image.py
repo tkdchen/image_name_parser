@@ -171,7 +171,10 @@ FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead
         # multiple path components in the name
         ["reg.io/org/ubi:9.3", ("reg.io", "org", "ubi", "9.3", "")],
         ["reg.io/org/tenant/ubi:9.3", ("reg.io", "org", "tenant/ubi", "9.3", "")],
-        ["reg.comp.io:3000/org/tenant/ubi:9.3", ("reg.comp.io:3000", "org", "tenant/ubi", "9.3", "")],
+        [
+            "reg.comp.io:3000/org/tenant/ubi:9.3",
+            ("reg.comp.io:3000", "org", "tenant/ubi", "9.3", ""),
+        ],
         # with digest
         [f"reg.io/org/ubi@{FAKE_DIGEST}", ("reg.io", "org", "ubi", "", FAKE_DIGEST)],
         [f"reg.io/org/ubi:9.3@{FAKE_DIGEST}", ("reg.io", "org", "ubi", "9.3", FAKE_DIGEST)],
