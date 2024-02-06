@@ -151,9 +151,9 @@ FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead
 
 
 @pytest.mark.parametrize(
-    "pullspec,expected",
+    "image_name,expected",
     [
-        # Test pullspec, expected (registry, namespace, repository, tag, digest)
+        # Test image name, expected (registry, namespace, repository, tag, digest)
         # simple cases
         ["ubuntu", ("", "", "ubuntu", "", "")],
         ["ubuntu:22.04", ("", "", "ubuntu", "22.04", "")],
@@ -163,6 +163,7 @@ FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead
         ["app:3000", ("", "", "app", "3000", "")],
         ["reg.io:3000", ("reg.io:3000", "", "", "", "")],
         ["reg.io/ubi:9.3", ("reg.io", "", "ubi", "9.3", "")],
+        ["reg.comp.io/ubi:9.3", ("reg.comp.io", "", "ubi", "9.3", "")],
         ["reg.io:3000/ubi:9.3", ("reg.io:3000", "", "ubi", "9.3", "")],
         ["sha256:1234afe3", ("", "", "sha256", "1234afe3", "")],
         ["org/sha256:1234afe3", ("", "org", "sha256", "1234afe3", "")],
@@ -170,14 +171,17 @@ FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead
         # multiple path components in the name
         ["reg.io/org/ubi:9.3", ("reg.io", "org", "ubi", "9.3", "")],
         ["reg.io/org/tenant/ubi:9.3", ("reg.io", "org", "tenant/ubi", "9.3", "")],
-        ["reg.io:3000/org/tenant/ubi:9.3", ("reg.io:3000", "org", "tenant/ubi", "9.3", "")],
+        [
+            "reg.comp.io:3000/org/tenant/ubi:9.3",
+            ("reg.comp.io:3000", "org", "tenant/ubi", "9.3", ""),
+        ],
         # with digest
         [f"reg.io/org/ubi@{FAKE_DIGEST}", ("reg.io", "org", "ubi", "", FAKE_DIGEST)],
         [f"reg.io/org/ubi:9.3@{FAKE_DIGEST}", ("reg.io", "org", "ubi", "9.3", FAKE_DIGEST)],
     ],
 )
-def test_image_reference(pullspec, expected):
-    ref = ImageReference.rough_parse(pullspec)
+def test_parse_image_reference(image_name: str, expected: str):
+    ref = ImageReference.rough_parse(image_name)
     assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
 
 
