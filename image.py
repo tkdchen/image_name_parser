@@ -142,9 +142,7 @@ class ImageReference:
                 namespace = name_components.pop(0)
                 repository = "/".join(name_components)
 
-        return cls(
-            registry=registry, repository=repository, namespace=namespace, tag=tag, digest=digest
-        )
+        return cls(registry=registry, repository=repository, namespace=namespace, tag=tag, digest=digest)
 
 
 FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead9a09ca8246c40"
@@ -387,9 +385,7 @@ def test_direct_initialization(attrs: dict[str, str], expected):
             },
         ],
         [
-            ImageReference(
-                "app", registry="reg.io", namespace="org", tag="9.3", digest=FAKE_DIGEST
-            ),
+            ImageReference("app", registry="reg.io", namespace="org", tag="9.3", digest=FAKE_DIGEST),
             {
                 "registry": "reg.io",
                 "namespace": "org",
