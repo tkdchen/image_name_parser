@@ -7,8 +7,14 @@ import pytest
 __author__ = "tkdchen"
 __version__ = "0.0.0"
 
-# Regular expression matches registered algorithm in OCI image spec
+# Matches registered algorithm in OCI image spec
 REGEX_DIGEST: Final = r"^(sha256:[0-9a-f]{64}|sha512:[0-9a-f]{128})$"
+# Matches a string that looks like a registry host with optional port
+REGEX_REGISTRY: Final = r"^[0-9a-zA-Z]+(\.[0-9a-zA-Z_-]+)+(:\d+)?$"
+
+
+def looks_like_a_registry(s: str) -> bool:
+    return s == "localhost" or re.match(REGEX_REGISTRY, s) is not None
 
 
 class ImageReference:
@@ -73,31 +79,57 @@ class ImageReference:
 
     @classmethod
     def rough_parse(cls, s: str) -> "ImageReference":
-        buf = []
-        colon_pos = 0  # only used for detecting tag
+        buf: list[str] = []
+        colon_pos = -1
         slash_count = 0
-        i = len(s)
         name_components: list[str] = []
-        registry = ""
-        namespace = ""
-        repository = ""
-        tag = ""
-        digest = ""
+        reg = ns = repo = tag = digest = ""
+        i = len(s)
 
         while True:
             i -= 1
+
             if i < 0:  # Scan ends
+                if not buf:
+                    raise ValueError("Missing image name component.")
+
+                name_components.append("".join(reversed(buf)))
+                name_components.reverse()
+
+                if slash_count == 0:
+                    if colon_pos < 0:
+                        repo = name_components[0]
+                    elif colon_pos > 0:
+                        part = name_components[0]
+                        repo = part[:colon_pos]
+                        tag_start_pos = colon_pos + 1
+                        tag = part[tag_start_pos:]
+                    else:
+                        raise ValueError("Missing image name component.")
+                else:
+                    part = name_components[0]
+                    if looks_like_a_registry(part):
+                        reg = part
+                        name_components.pop(0)
+                        slash_count -= 1
+                    if slash_count > 0:
+                        ns = name_components.pop(0)
+                    repo = "/".join(name_components)
+
                 break
+
             c = s[i]
             if c == ":":
                 colon_pos = i
                 buf.append(c)
+
             elif c == "@":
                 # digest appears
                 digest = "".join(reversed(buf))
                 # reset
                 buf = []
                 colon_pos = -1  # digest includes :
+
             elif c == "/":
                 slash_count += 1
                 if slash_count == 1 and colon_pos > 0:
@@ -114,35 +146,11 @@ class ImageReference:
                 name_components.append("".join(reversed(buf)))
                 # reset
                 buf = []
+
             else:
                 buf.append(c)
 
-        if not buf:
-            raise ValueError("Missing image name component.")
-
-        name_components.append("".join(reversed(buf)))
-        name_components.reverse()
-
-        leftmost = name_components[0]
-
-        match = re.match(r"^[0-9a-zA-Z]+(\.[0-9a-zA-Z_-]+)+(:\d+)?$", leftmost)
-        if match is not None or leftmost == "localhost":
-            registry = leftmost  # looks like a registry, treat it as it is
-            name_components.pop(0)
-
-        elif match := re.match(r"([^.]+):([0-9a-zA-Z_.-]+)", leftmost):
-            # match: ubuntu:latest. Then, the list must be empty
-            repository, tag = match.groups()
-            name_components.pop(0)
-
-        if len(name_components) > 0:
-            if len(name_components) == 1:
-                repository = name_components[0]
-            else:
-                namespace = name_components.pop(0)
-                repository = "/".join(name_components)
-
-        return cls(registry=registry, repository=repository, namespace=namespace, tag=tag, digest=digest)
+        return cls(registry=reg, repository=repo, namespace=ns, tag=tag, digest=digest)
 
 
 FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead9a09ca8246c40"
@@ -159,7 +167,7 @@ FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead
         ["localhost/ubuntu", ("localhost", "", "ubuntu", "", "")],
         ["library/ubuntu", ("", "library", "ubuntu", "", "")],
         ["app:3000", ("", "", "app", "3000", "")],
-        ["reg.io:3000", ("reg.io:3000", "", "", "", "")],
+        ["reg.io:3000", ("", "", "reg.io", "3000", "")],
         ["reg.io/ubi:9.3", ("reg.io", "", "ubi", "9.3", "")],
         ["reg.comp.io/ubi:9.3", ("reg.comp.io", "", "ubi", "9.3", "")],
         ["reg.io:3000/ubi:9.3", ("reg.io:3000", "", "ubi", "9.3", "")],
@@ -188,10 +196,11 @@ def test_parse_image_reference(image_name: str, expected: str):
     [
         "app/:9.3",
         "reg.io/app/:9.3",
-        f"reg.io/app/:9.3@{FAKE_DIGEST}",
+        "reg.io/app/:9.3@" + FAKE_DIGEST,
         "reg.io/org/app/:9.3",
         "reg.io/org//app:9.3",
         "/reg.io/org/app:9.3",
+        ":9.3",
     ],
 )
 def test_missing_image_name_components(image_name: str) -> None:
