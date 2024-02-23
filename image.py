@@ -1,7 +1,7 @@
 import copy
 import os.path
 import re
-from typing import Final
+from typing import Final, Union
 
 import pytest
 
@@ -163,6 +163,7 @@ class ImageReference:
         return cls(registry=reg, repository=repo, namespace=ns, tag=tag, digest=digest)
 
 
+ImageRefTuple = tuple[str, str, str, str]
 FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead9a09ca8246c40"
 
 
@@ -196,7 +197,7 @@ FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead
         [f"reg.io/org/ubi:9.3@{FAKE_DIGEST}", ("reg.io", "org", "ubi", "9.3", FAKE_DIGEST)],
     ],
 )
-def test_parse_image_reference(image_name: str, expected: str):
+def test_parse_image_reference(image_name: str, expected: ImageRefTuple):
     ref = ImageReference.parse(image_name)
     assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
 
@@ -251,7 +252,7 @@ def test_missing_image_name_components(image_name: str) -> None:
         ],
     ],
 )
-def test___str__(attrs, expected):
+def test___str__(attrs: dict[str, str], expected: str) -> None:
     assert expected == str(ImageReference(**attrs))
 
 
@@ -290,7 +291,7 @@ def test___str__(attrs, expected):
         ],
     ],
 )
-def test___eq__(image_url: str, attrs: dict[str, str]):
+def test___eq__(image_url: str, attrs: dict[str, str]) -> None:
     left = ImageReference.parse(image_url)
     right = ImageReference(**attrs)
     assert left == right
@@ -331,18 +332,18 @@ def test___eq__(image_url: str, attrs: dict[str, str]):
         ],
     ],
 )
-def test_not__eq__(image_url: str, attrs: dict[str, str]):
+def test_not__eq__(image_url: str, attrs: dict[str, str]) -> None:
     left = ImageReference.parse(image_url)
     right = ImageReference(**attrs)
     assert left != right
 
 
-def test___eq__wrong_type():
+def test___eq__wrong_type() -> None:
     with pytest.raises(TypeError, match=""):
         ImageReference.parse("app:9.3").__eq__("app:9.3")
 
 
-def test___repr__():
+def test___repr__() -> None:
     assert "reg.io/app:9.3" in repr(ImageReference.parse("reg.io/app:9.3"))
 
 
@@ -363,7 +364,7 @@ def test___repr__():
         [{"repository": "app", "digest": "sha:123"}, "is not a valid"],
     ],
 )
-def test_direct_initialization(attrs: dict[str, str], expected):
+def test_direct_initialization(attrs: dict[str, str], expected: Union[str, ImageRefTuple]) -> None:
     if isinstance(expected, str):
         with pytest.raises(ValueError, match=expected):
             ImageReference(**attrs)
@@ -415,7 +416,7 @@ def test_direct_initialization(attrs: dict[str, str], expected):
         ],
     ],
 )
-def test_as_dict(image_ref: ImageReference, expected: dict[str, str]):
+def test_as_dict(image_ref: ImageReference, expected: dict[str, str]) -> None:
     assert expected == image_ref.as_dict()
 
 
@@ -438,7 +439,7 @@ def test_as_dict(image_ref: ImageReference, expected: dict[str, str]):
         ],
     ],
 )
-def test___copy__(origin_ref: ImageReference, expected: tuple[str, str, str, str]) -> None:
+def test___copy__(origin_ref: ImageReference, expected: ImageRefTuple) -> None:
     ref = copy.copy(origin_ref)
     assert id(ref) != id(origin_ref)
     assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
