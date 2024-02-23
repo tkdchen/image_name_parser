@@ -78,7 +78,7 @@ class ImageReference:
         }
 
     @classmethod
-    def rough_parse(cls, s: str) -> "ImageReference":
+    def parse(cls, s: str) -> "ImageReference":
         buf: list[str] = []
         colon_pos = -1
         slash_count = 0
@@ -187,7 +187,7 @@ FAKE_DIGEST: Final = "sha256:b330d9e6aa681d5fe2b11fcfe0ca51e1801d837dd26804b0ead
     ],
 )
 def test_parse_image_reference(image_name: str, expected: str):
-    ref = ImageReference.rough_parse(image_name)
+    ref = ImageReference.parse(image_name)
     assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
 
 
@@ -205,7 +205,7 @@ def test_parse_image_reference(image_name: str, expected: str):
 )
 def test_missing_image_name_components(image_name: str) -> None:
     with pytest.raises(ValueError, match="Missing image name component"):
-        ImageReference.rough_parse(image_name)
+        ImageReference.parse(image_name)
 
 
 @pytest.mark.parametrize(
@@ -281,7 +281,7 @@ def test___str__(attrs, expected):
     ],
 )
 def test___eq__(image_url: str, attrs: dict[str, str]):
-    left = ImageReference.rough_parse(image_url)
+    left = ImageReference.parse(image_url)
     right = ImageReference(**attrs)
     assert left == right
 
@@ -322,18 +322,18 @@ def test___eq__(image_url: str, attrs: dict[str, str]):
     ],
 )
 def test_not__eq__(image_url: str, attrs: dict[str, str]):
-    left = ImageReference.rough_parse(image_url)
+    left = ImageReference.parse(image_url)
     right = ImageReference(**attrs)
     assert left != right
 
 
 def test___eq__wrong_type():
     with pytest.raises(TypeError, match=""):
-        ImageReference.rough_parse("app:9.3").__eq__("app:9.3")
+        ImageReference.parse("app:9.3").__eq__("app:9.3")
 
 
 def test___repr__():
-    assert "reg.io/app:9.3" in repr(ImageReference.rough_parse("reg.io/app:9.3"))
+    assert "reg.io/app:9.3" in repr(ImageReference.parse("reg.io/app:9.3"))
 
 
 @pytest.mark.parametrize(
