@@ -1,3 +1,4 @@
+import copy
 import os.path
 import re
 from typing import Final
@@ -66,6 +67,15 @@ class ImageReference:
             and self.repository == that.repository
             and self.tag == that.tag
             and self.digest == that.digest
+        )
+
+    def __copy__(self) -> "ImageReference":
+        return ImageReference(
+            registry=self.registry,
+            namespace=self.namespace,
+            repository=self.repository,
+            tag=self.tag,
+            digest=self.digest,
         )
 
     def as_dict(self) -> dict[str, str]:
@@ -407,3 +417,28 @@ def test_direct_initialization(attrs: dict[str, str], expected):
 )
 def test_as_dict(image_ref: ImageReference, expected: dict[str, str]):
     assert expected == image_ref.as_dict()
+
+
+@pytest.mark.parametrize(
+    "origin_ref,expected",
+    [
+        [ImageReference("app"), ("", "", "app", "", "")],
+        [ImageReference("app", registry="reg.io"), ("reg.io", "", "app", "", "")],
+        [
+            ImageReference("app", registry="reg.io", namespace="org"),
+            ("reg.io", "org", "app", "", ""),
+        ],
+        [
+            ImageReference("app", registry="reg.io", namespace="org", tag="9.3"),
+            ("reg.io", "org", "app", "9.3", ""),
+        ],
+        [
+            ImageReference("app", registry="reg.io", namespace="org", tag="9.3", digest=FAKE_DIGEST),
+            ("reg.io", "org", "app", "9.3", FAKE_DIGEST),
+        ],
+    ],
+)
+def test___copy__(origin_ref: ImageReference, expected: tuple[str, str, str, str]) -> None:
+    ref = copy.copy(origin_ref)
+    assert id(ref) != id(origin_ref)
+    assert expected == (ref.registry, ref.namespace, ref.repository, ref.tag, ref.digest)
