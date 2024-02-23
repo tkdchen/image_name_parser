@@ -4,6 +4,7 @@ from typing import Final
 
 __author__ = "tkdchen"
 __version__ = "0.0.0"
+__all__ = ("ImageReference",)
 
 # Matches registered algorithm in OCI image spec
 REGEX_DIGEST: Final = r"^(sha256:[0-9a-f]{64}|sha512:[0-9a-f]{128})$"
