@@ -7,7 +7,7 @@ Test code: `tox`
 ```python
 from image import ImageReference
 
-ref = ImageReference.rough_parse("quay.io/nitrate/web:4.13")
+ref = ImageReference.parse("quay.io/nitrate/web:4.13")
 print("registry:", ref.registry)
 print("namespace:", ref.namespace)
 print("repository:", ref.repository)
