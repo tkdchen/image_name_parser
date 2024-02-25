@@ -3,6 +3,9 @@
 .coverage
 
 htmlcov/
-__pycache__/
+**/__pycache__/
 .tox/
+.idea/
 
+**/*.egg-info/
+dist/

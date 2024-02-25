@@ -2,8 +2,6 @@ import os.path
 import re
 from typing import Final
 
-__author__ = "tkdchen"
-__version__ = "0.0.0"
 __all__ = ("ImageReference",)
 
 # Matches registered algorithm in OCI image spec
