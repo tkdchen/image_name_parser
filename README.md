@@ -1,11 +1,11 @@
-# Image name parser
+# Utilities working with container images
 
 Test code: `tox`
 
-## Usage
+## `ImageReference`
 
 ```python
-from image import ImageReference
+from image_name_parser import ImageReference
 
 ref = ImageReference.parse("quay.io/nitrate/web:4.13")
 print("registry:", ref.registry)
