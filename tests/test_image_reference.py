@@ -1,6 +1,6 @@
 import copy
 import pytest
-from image_name_parser import ImageReference
+from my_image_utils import ImageReference
 from typing import Final, Union
 
 ImageRefTuple = tuple[str, str, str, str]

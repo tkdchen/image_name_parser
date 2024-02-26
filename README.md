@@ -5,7 +5,7 @@ Test code: `tox`
 ## `ImageReference`
 
 ```python
-from image_name_parser import ImageReference
+from my_image_utils import ImageReference
 
 ref = ImageReference.parse("quay.io/nitrate/web:4.13")
 print("registry:", ref.registry)
