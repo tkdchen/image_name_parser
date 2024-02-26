@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "image_name_parser"
+name = "my_image_utils"
 description = "Utilities working with container image."
 readme = "README.md"
 license = {file = "LICENSE"}
