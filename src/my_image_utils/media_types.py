@@ -61,7 +61,7 @@ class ImageManifestV2S2(Enum):
     IMAGE_ROOTFS_DIFF_GZIP = "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
 
-def mediaTypesCompatibilityMatrix() -> Iterable[tuple[str, str]]:
+def media_types_compatibility_matrix() -> Iterable[tuple[str, str]]:
     """
     Return media type compatibility matrix between OCI image spec and
     distribution project Image manifest definition.
